@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#07090e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Apex Terminal">
+<title>Apex: Central Execution Terminal</title>
+<style>
+:root {
+--bg-base: #07090e;
+--bg-surface: #0e131f;
+--bg-card: rgba(18, 25, 41, 0.75);
+--bg-card-active: #172136;
+--border: rgba(56, 189, 248, 0.15);
+--border-highlight: rgba(56, 189, 248, 0.4);
+--text-main: #f8fafc;
+--text-muted: #94a3b8;
+--neon-cyan: #00f2fe;
+--neon-blue: #3b82f6;
+--neon-emerald: #10b981;
+--neon-rose: #f43f5e;
+--neon-amber: #f59e0b;
+--neon-purple: #a855f7;
+--grad-cyan: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+--grad-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
+--grad-rose: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+--grad-card: linear-gradient(145deg, rgba(22, 32, 53, 0.8) 0%, rgba(14, 20, 35, 0.9) 100%);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg-base); color: var(--text-main); min-height: 100vh; padding-bottom: 95px; overflow-x: hidden; background-image: radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.08) 0%, transparent 45%); }
+.top-header { position: sticky; top: 0; z-index: 100; background: rgba(7, 9, 14, 0.85); backdrop-filter: blur(18px); border-bottom: 1px solid var(--border); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+.logo { font-size: 1.25rem; font-weight: 900; letter-spacing: -0.03em; display: flex; align-items: center; gap: 8px; }
+.logo-badge { background: var(--grad-cyan); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.3rem; }
+.live-pill { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700; padding: 5px 12px; border-radius: 999px; background: rgba(0, 242, 254, 0.1); border: 1px solid rgba(0, 242, 254, 0.3); color: var(--neon-cyan); box-shadow: 0 0 12px rgba(0, 242, 254, 0.15); }
+.pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan); animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+.view-pane { display: none; padding: 18px; max-width: 580px; margin: 0 auto; }
+.view-pane.active { display: block; animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.hero-card { background: var(--grad-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 18px; position: relative; overflow: hidden; backdrop-filter: blur(14px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.5); }
+.hero-card::after { content:''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: radial-gradient(circle, rgba(0, 242, 254, 0.18) 0%, transparent 70%); pointer-events: none; }
+.hero-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+.hero-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+.progress-bar-container { width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 999px; margin-top: 14px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--grad-cyan); width: 0%; transition: width 0.4s ease; border-radius: 999px; }
+.kpi-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 18px; }
+.kpi-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; position: relative; backdrop-filter: blur(10px); }
+.kpi-box.emerald { border-color: rgba(16, 185, 129, 0.3); background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(18, 25, 41, 0.8) 100%); }
+.kpi-box.cyan { border-color: rgba(0, 242, 254, 0.3); background: linear-gradient(180deg, rgba(0, 242, 254, 0.08) 0%, rgba(18, 25, 41, 0.8) 100%); }
+.kpi-num { font-size: 1.55rem; font-weight: 900; letter-spacing: -0.02em; margin-top: 3px; }
+.kpi-title { font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; }
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; margin-bottom: 12px; }
+.chip { background: #131a29; border: 1px solid var(--border); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; user-select: none; }
+.chip:active { transform: scale(0.96); }
+.chip.active { background: rgba(0, 242, 254, 0.15); border-color: var(--neon-cyan); color: #fff; box-shadow: 0 0 12px rgba(0, 242, 254, 0.2); }
+.chip.chip-win.active { background: rgba(16, 185, 129, 0.2); border-color: var(--neon-emerald); color: var(--neon-emerald); }
+.chip.chip-loss.active { background: rgba(244, 63, 94, 0.2); border-color: var(--neon-rose); color: var(--neon-rose); }
+.chip.chip-long.active { background: rgba(16, 185, 129, 0.25); border-color: var(--neon-emerald); color: #fff; }
+.chip.chip-short.active { background: rgba(244, 63, 94, 0.25); border-color: var(--neon-rose); color: #fff; }
+.btn-primary { background: var(--grad-cyan); color: #050c18; border: none; padding: 13px 20px; border-radius: 12px; font-size: 0.95rem; font-weight: 800; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 18px rgba(0, 242, 254, 0.25); transition: 0.2s; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-secondary { background: #182236; color: #fff; border: 1px solid var(--border); padding: 10px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.routine-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; transition: all 0.2s; backdrop-filter: blur(8px); }
+.routine-card.done { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.05); }
+.routine-time { font-size: 0.72rem; font-weight: 800; color: var(--neon-cyan); background: rgba(0, 242, 254, 0.1); padding: 5px 8px; border-radius: 8px; white-space: nowrap; }
+.routine-info { flex: 1; }
+.routine-title { font-size: 0.92rem; font-weight: 800; }
+.routine-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.check-circle { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 0.85rem; color: transparent; }
+.routine-card.done .check-circle { background: var(--grad-emerald); border-color: var(--neon-emerald); color: #fff; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.feed-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; backdrop-filter: blur(10px); }
+.feed-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.feed-badge { font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 6px; }
+.badge-win { background: rgba(16, 185, 129, 0.15); color: var(--neon-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-loss { background: rgba(244, 63, 94, 0.15); color: var(--neon-rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(4, 7, 12, 0.85); backdrop-filter: blur(10px); z-index: 200; justify-content: center; align-items: flex-end; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: #0c121e; border: 1px solid var(--border-highlight); width: 100%; max-width: 580px; max-height: 88vh; border-radius: 24px 24px 0 0; padding: 22px; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
+.input-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--neon-cyan); letter-spacing: 0.06em; margin-bottom: 4px; }
+.input-field { width: 100%; background: #131a29; border: 1px solid var(--border); color: #fff; padding: 11px 14px; border-radius: 10px; font-size: 0.92rem; margin-bottom: 12px; }
+.input-field:focus { outline: none; border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 74px; background: rgba(7, 9, 14, 0.92); backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 100; max-width: 580px; margin: 0 auto; }
+.nav-item { background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer; padding: 8px 14px; border-radius: 12px; transition: 0.2s; }
+.nav-item.active { color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
+.nav-icon { font-size: 1.35rem; }
+</style>
+</head>
+<body>
+<div class="top-header">
+<div class="logo"><span class="logo-badge">⚡</span> APEX TERMINAL</div>
+<div class="live-pill"><div class="pulse-dot"></div><span id="headerClock">EAT Active</span></div>
+</div>
+<div class="view-pane active" id="paneRoutine">
+<div class="hero-card">
+<div style="display:flex; justify-content:space-between; align-items:flex-start;">
+<div><div class="hero-title">Daily Execution</div><div class="hero-sub">EAT (UTC+3) Daily Routine</div></div>
+<div style="font-size:1.6rem; font-weight:900; color:var(--neon-cyan);" id="routinePercent">0%</div>
+</div>
+<div class="progress-bar-container"><div class="progress-fill" id="routineProgress"></div></div>
+</div>
+<div class="routine-card" onclick="toggleRoutine(0)"><div class="routine-time">06:30 - 08:00</div><div class="routine-info"><div class="routine-title">🏋️ Strength & Hypertrophy</div><div class="routine-desc">Progressive overload session & nutrition</div></div><div class="check-circle" id="rc0">✓</div></div>
+<div class="routine-card" onclick="toggleRoutine(1)"><div class="routine-time">08:30 - 09:30</div><div class="routine-info"><div class="routine-title">🔍 Pre-Market Briefing</div><div class="routine-desc">Macro calendar, Gold HTF bias, liquidity pools</div></div><div class="check-circle" id="rc1">✓</div></div>
+<div class="routine-card" onclick="toggleRoutine(2)"><div class="routine-time">09:30 - 12:00</div><div class="routine-info"><div class="routine-title">🎯 London Killzone Execution</div><div class="routine-desc">MSS with displacement & liquidity sweep; strict 1R risk</div></div><div class="check-circle" id="rc2">✓</div></div>
+<div class="routine-card" onclick="toggleRoutine(3)"><div class="routine-time">13:30 - 17:00</div><div class="routine-info"><div class="routine-title">💻 Software Dev Deep Work</div><div class="routine-desc">React Native, Expo, Android components, C++ sprints</div></div><div class="check-circle" id="rc3">✓</div></div>
+<div class="routine-card" onclick="toggleRoutine(4)"><div class="routine-time">17:00 - 19:00</div><div class="routine-info"><div class="routine-title">📊 NY Session & Trade Log</div><div class="routine-desc">US volatility review, chart archive, 4-layer journal entry</div></div><div class="check-circle" id="rc4">✓</div></div>
+</div>
+<div class="view-pane" id="paneJournal">
+<div class="kpi-row">
+<div class="kpi-box emerald"><div class="kpi-title">Win Rate</div><div class="kpi-num" style="color:var(--neon-emerald);" id="kpiWr">0%</div></div>
+<div class="kpi-box cyan"><div class="kpi-title">Net R Captured</div><div class="kpi-num" style="color:var(--neon-cyan);" id="kpiNetR">+0.0R</div></div>
+<div class="kpi-box"><div class="kpi-title">Profit Factor</div><div class="kpi-num" id="kpiPf">0.00</div></div>
+<div class="kpi-box"><div class="kpi-title">Expectancy (R)</div><div class="kpi-num" id="kpiExp">+0.00R</div></div>
+</div>
+<button class="btn-primary" onclick="openTradeSheet()" style="margin-bottom:16px;"><span>⚡</span> FAST TRADE LOGGER</button>
+<div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.06em; margin-bottom:10px;">Execution Feed</div>
+<div id="tradesFeed"></div>
+</div>
+<div class="view-pane" id="paneDevFit">
+<div class="hero-card" style="background: linear-gradient(145deg, rgba(59, 130, 246, 0.15) 0%, rgba(14, 20, 35, 0.9) 100%);">
+<div class="hero-title">Engineering & Fitness</div>
+<div class="hero-sub">Daily progress tracking across software sprints and hypertrophy</div>
+</div>
+<div class="hero-card">
+<div class="input-label">💻 Today's Software Sprint Focus</div>
+<input type="text" class="input-field" id="devTask" placeholder="e.g. Supabase Auth + React Native Navigation">
+<div class="input-label">Sprint Notes / Commits</div>
+<textarea class="input-field" id="devLog" rows="3" placeholder="Features completed, technical blockers..."></textarea>
+<button class="btn-secondary" style="width:100%;" onclick="saveDevSprint()">Save Dev Sprint</button>
+</div>
+<div class="hero-card">
+<div class="input-label">🏋️ Gym Workout Split</div>
+<div class="chip-group" id="splitChips">
+<div class="chip active" onclick="selectSplit(this, 'Upper Body')">Upper Body</div>
+<div class="chip" onclick="selectSplit(this, 'Lower Body')">Lower Body</div>
+<div class="chip" onclick="selectSplit(this, 'Push Focus')">Push Focus</div>
+<div class="chip" onclick="selectSplit(this, 'Pull Focus')">Pull Focus</div>
+<div class="chip" onclick="selectSplit(this, 'Mobility & Recovery')">Recovery</div>
+</div>
+<div class="input-label">Key Lifts & Progression Notes</div>
+<textarea class="input-field" id="fitLog" rows="3" placeholder="Working weights, target sets (e.g., Squat 3x8 100kg)..."></textarea>
+<button class="btn-secondary" style="width:100%;" onclick="saveFitnessLog()">Save Workout Log</button>
+</div>
+</div>
+<div class="view-pane" id="paneData">
+<div class="hero-card">
+<div class="hero-title">Offline Data & Backups</div>
+<div class="hero-sub">Zero-server local storage. You own 100% of your data.</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:12px;">
+<button class="btn-primary" onclick="exportBackup()">📥 Download Complete Backup (JSON)</button>
+<button class="btn-secondary" onclick="document.getElementById('fileIn').click()">📤 Restore from JSON</button>
+<input type="file" id="fileIn" style="display:none" onchange="importBackup(event)">
+</div>
+</div>
+<div class="modal-overlay" id="tradeModalOverlay">
+<div class="modal-box">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+<div style="font-size:1.1rem; font-weight:900; color:var(--neon-cyan);">⚡ Log Trade (Fast Entry)</div>
+<div style="cursor:pointer; font-size:1.4rem; color:var(--text-muted);" onclick="closeTradeSheet()">&times;</div>
+</div>
+<div class="input-label">1. Direction & Session</div>
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+<div class="chip chip-long active" id="btnLong" style="text-align:center; padding:12px;" onclick="setDir('Long')">▲ LONG</div>
+<div class="chip chip-short" id="btnShort" style="text-align:center; padding:12px;" onclick="setDir('Short')">▼ SHORT</div>
+</div>
+<div class="chip-group" id="sessionChips">
+<div class="chip active" onclick="setSession(this, 'London')">London (10-13 EAT)</div>
+<div class="chip" onclick="setSession(this, 'NY')">New York (15-18 EAT)</div>
+<div class="chip" onclick="setSession(this, 'Asian')">Asian Range</div>
+</div>
+<div class="input-label">Instrument / Ticker</div>
+<input type="text" class="input-field" id="inTicker" value="XAU/USD">
+<div class="input-label">Execution Prices</div>
+<div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+<input type="number" class="input-field" id="inEntry" placeholder="Entry" step="0.01">
+<input type="number" class="input-field" id="inSl" placeholder="Stop" step="0.01">
+<input type="number" class="input-field" id="inTp" placeholder="Target" step="0.01">
+</div>
+<div class="input-label">Trade Outcome</div>
+<div class="chip-group">
+<div class="chip chip-win active" id="resWin" onclick="setRes(this, 'Win')">🏆 WIN</div>
+<div class="chip chip-loss" id="resLoss" onclick="setRes(this, 'Loss')">🛑 LOSS</div>
+<div class="chip" id="resBe" onclick="setRes(this, 'Breakeven')">⚖️ BREAKEVEN</div>
+</div>
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+<div><div class="input-label">Dollar Risk ($)</div><input type="number" class="input-field" id="inRisk" value="500"></div>
+<div><div class="input-label">Net P&L ($)</div><input type="number" class="input-field" id="inPnl" placeholder="+1500" step="0.01"></div>
+</div>
+<div class="input-label">2. Setup / Strategy Tag</div>
+<div class="chip-group" id="setupChips">
+<div class="chip active" onclick="setSetup(this, 'Liquidity Sweep + FVG')">Sweep + FVG</div>
+<div class="chip" onclick="setSetup(this, 'Order Block')">Order Block</div>
+<div class="chip" onclick="setSetup(this, 'Breaker Block')">Breaker Block</div>
+<div class="chip" onclick="setSetup(this, 'Opening Range Breakout')">ORB</div>
+</div>
+<input type="text" class="input-field" id="inHtfBias" placeholder="Higher-Timeframe Bias / POI">
+<div class="input-label">3. Emotional State</div>
+<div class="chip-group" id="emotionChips">
+<div class="chip active" onclick="setEmotion(this, 'Calm Detachment')">🧘 Calm</div>
+<div class="chip" onclick="setEmotion(this, 'FOMO')">⚡ FOMO</div>
+<div class="chip" onclick="setEmotion(this, 'Hesitation')">⏳ Hesitation</div>
+<div class="chip" onclick="setEmotion(this, 'Overconfidence')">🔥 Overconfident</div>
+</div>
+<div class="input-label">Rule Adherence (1–5)</div>
+<div class="chip-group" id="ruleChips">
+<div class="chip" onclick="setRule(this, 1)">1 ⭐</div>
+<div class="chip" onclick="setRule(this, 2)">2 ⭐</div>
+<div class="chip" onclick="setRule(this, 3)">3 ⭐</div>
+<div class="chip" onclick="setRule(this, 4)">4 ⭐</div>
+<div class="chip active" onclick="setRule(this, 5)">5 ⭐ (Followed Plan)</div>
+</div>
+<div class="input-label">Key Actionable Takeaway</div>
+<input type="text" class="input-field" id="inTakeaway" placeholder="One sentence summarizing execution lesson..." required>
+<button class="btn-primary" onclick="submitFastTrade()">CONFIRM & LOG TRADE</button>
+</div>
+</div>
+<div class="bottom-nav">
+<div class="nav-item active" onclick="navigate('paneRoutine', this)"><div class="nav-icon">⏱️</div><span>Routine</span></div>
+<div class="nav-item" onclick="navigate('paneJournal', this)"><div class="nav-icon">📊</div><span>Journal</span></div>
+<div class="nav-item" onclick="navigate('paneDevFit', this)"><div class="nav-icon">🎯</div><span>Dev & Fit</span></div>
+<div class="nav-item" onclick="navigate('paneData', this)"><div class="nav-icon">⚙️</div><span>Sync</span></div>
+</div>
+<script>
+let trades = JSON.parse(localStorage.getItem("apex_trades")) || [
+{ id: 1, ticker: "XAU/USD", dir: "Long", session: "London", setup: "Liquidity Sweep + FVG", risk: 500, pnl: 1465, r: 2.93, res: "Win", emotion: "Calm Detachment", rule: 5, takeaway: "Waited patiently for M5 displacement after Asia low sweep." },
+{ id: 2, ticker: "XAU/USD", dir: "Short", session: "NY", setup: "Order Block", risk: 500, pnl: -515, r: -1.03, res: "Loss", emotion: "Calm Detachment", rule: 5, takeaway: "News spike invalidated setup; respected 1R stop." }
+];
+let routineState = JSON.parse(localStorage.getItem("apex_routine")) || [false, false, false, false, false];
+let activeSplit = "Upper Body";
+let tradeFormState = { dir: "Long", session: "London", res: "Win", setup: "Liquidity Sweep + FVG", emotion: "Calm Detachment", rule: 5 };
+
+function navigate(paneId, btn) {
+document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('active'));
+document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+document.getElementById(paneId).classList.add('active');
+btn.classList.add('active');
+}
+function toggleRoutine(index) {
+routineState[index] = !routineState[index];
+localStorage.setItem("apex_routine", JSON.stringify(routineState));
+renderRoutine();
+}
+function renderRoutine() {
+const cards = document.querySelectorAll('.routine-card');
+let doneCount = 0;
+routineState.forEach((done, i) => {
+if (cards[i]) {
+if (done) { cards[i].classList.add('done'); doneCount++; } else { cards[i].classList.remove('done'); }
+}
+});
+const pct = Math.round((doneCount / 5) * 100);
+document.getElementById('routinePercent').textContent = pct + "%";
+document.getElementById('routineProgress').style.width = pct + "%";
+}
+function renderTrades() {
+const total = trades.length;
+if (total === 0) return;
+const wins = trades.filter(t => t.res === "Win");
+const losses = trades.filter(t => t.res === "Loss");
+const wr = ((wins.length / total) * 100).toFixed(1);
+const totalR = trades.reduce((acc, t) => acc + (parseFloat(t.r) || 0), 0);
+const grossWin = wins.reduce((acc, t) => acc + (parseFloat(t.pnl) || 0), 0);
+const grossLoss = Math.abs(losses.reduce((acc, t) => acc + (parseFloat(t.pnl) || 0), 0));
+const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : (grossWin > 0 ? "∞" : "0.00");
+const avgW = wins.length > 0 ? wins.reduce((a,b)=>a+(parseFloat(b.r)||0),0)/wins.length : 0;
+const avgL = losses.length > 0 ? Math.abs(losses.reduce((a,b)=>a+(parseFloat(b.r)||0),0))/losses.length : 0;
+const exp = (((wins.length/total)*avgW) - ((losses.length/total)*avgL)).toFixed(2);
+document.getElementById('kpiWr').textContent = wr + "%";
+document.getElementById('kpiNetR').textContent = (totalR >= 0 ? "+" : "") + totalR.toFixed(1) + "R";
+document.getElementById('kpiPf').textContent = pf;
+document.getElementById('kpiExp').textContent = (exp >= 0 ? "+" : "") + exp + "R";
+const feed = document.getElementById('tradesFeed');
+feed.innerHTML = "";
+trades.forEach(t => {
+const item = document.createElement('div');
+item.className = 'feed-item';
+const badgeCls = t.res === "Win" ? "badge-win" : "badge-loss";
+const rSign = t.r >= 0 ? "+" : "";
+item.innerHTML = `
+<div class="feed-top"><strong style="font-size:0.95rem;">${t.ticker} (${t.dir})</strong><span class="feed-badge ${badgeCls}">${t.res} (${rSign}${t.r}R)</span></div>
+<div style="font-size:0.75rem; color:var(--text-muted); display:flex; gap:8px;"><span>${t.session}</span> • <span>${t.setup}</span> • <span>Score: ${t.rule}/5 ⭐</span></div>
+<div style="font-size:0.78rem; color:#e2e8f0; margin-top:6px; font-style:italic;">"${t.takeaway}"</div>
+`;
+feed.appendChild(item);
+});
+}
+function openTradeSheet() { document.getElementById('tradeModalOverlay').classList.add('active'); }
+function closeTradeSheet() { document.getElementById('tradeModalOverlay').classList.remove('active'); }
+function setDir(d) {
+tradeFormState.dir = d;
+document.getElementById('btnLong').classList.toggle('active', d === 'Long');
+document.getElementById('btnShort').classList.toggle('active', d === 'Short');
+}
+function setSession(el, s) {
+tradeFormState.session = s;
+document.querySelectorAll('#sessionChips .chip').forEach(c => c.classList.remove('active'));
+el.classList.add('active');
+}
+function setRes(el, r) {
+tradeFormState.res = r;
+document.getElementById('resWin').classList.toggle('active', r === 'Win');
+document.getElementById('resLoss').classList.toggle('active', r === 'Loss');
+document.getElementById('resBe').classList.toggle('active', r === 'Breakeven');
+}
+function setSetup(el, s) {
+tradeFormState.setup = s;
+document.querySelectorAll('#setupChips .chip').forEach(c => c.classList.remove('active'));
+el.classList.add('active');
+}
+function setEmotion(el, e) {
+tradeFormState.emotion = e;
+document.querySelectorAll('#emotionChips .chip').forEach(c => c.classList.remove('active'));
+el.classList.add('active');
+}
+function setRule(el, score) {
+tradeFormState.rule = score;
+document.querySelectorAll('#ruleChips .chip').forEach(c => c.classList.remove('active'));
+el.classList.add('active');
+}
+function submitFastTrade() {
+const risk = parseFloat(document.getElementById('inRisk').value) || 500;
+let pnl = parseFloat(document.getElementById('inPnl').value);
+if (isNaN(pnl)) { pnl = tradeFormState.res === 'Win' ? risk * 2 : (tradeFormState.res === 'Loss' ? -risk : 0); }
+const r = (pnl / risk).toFixed(2);
+const takeaway = document.getElementById('inTakeaway').value.trim() || "Executed setup according to written rules.";
+const newTrade = {
+id: Date.now(),
+ticker: document.getElementById('inTicker').value.trim() || "XAU/USD",
+dir: tradeFormState.dir,
+session: tradeFormState.session,
+setup: tradeFormState.setup,
+risk: risk,
+pnl: pnl,
+r: parseFloat(r),
+res: tradeFormState.res,
+emotion: tradeFormState.emotion,
+rule: tradeFormState.rule,
+takeaway: takeaway
+};
+trades.unshift(newTrade);
+localStorage.setItem("apex_trades", JSON.stringify(trades));
+closeTradeSheet();
+renderTrades();
+alert("Trade logged into your journal!");
+}
+function selectSplit(el, s) {
+activeSplit = s;
+document.querySelectorAll('#splitChips .chip').forEach(c => c.classList.remove('active'));
+el.classList.add('active');
+}
+function saveDevSprint() {
+localStorage.setItem("apex_dev", JSON.stringify({ task: document.getElementById('devTask').value, log: document.getElementById('devLog').value }));
+alert("Dev sprint saved!");
+}
+function saveFitnessLog() {
+localStorage.setItem("apex_fit", JSON.stringify({ split: activeSplit, log: document.getElementById('fitLog').value }));
+alert("Workout log saved!");
+}
+function exportBackup() {
+const data = { trades: trades, routine: routineState, dev: JSON.parse(localStorage.getItem("apex_dev")), fit: JSON.parse(localStorage.getItem("apex_fit")) };
+const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+const a = document.createElement("a");
+a.href = URL.createObjectURL(blob);
+a.download = `apex_terminal_backup_${new Date().toISOString().slice(0,10)}.json`;
+a.click();
+}
+function importBackup(e) {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = (event) => {
+try {
+const data = JSON.parse(event.target.result);
+if (data.trades) trades = data.trades;
+if (data.routine) routineState = data.routine;
+localStorage.setItem("apex_trades", JSON.stringify(trades));
+localStorage.setItem("apex_routine", JSON.stringify(routineState));
+renderTrades();
+renderRoutine();
+alert("Backup successfully restored!");
+} catch (err) { alert("Invalid file format."); }
+};
+reader.readAsText(file);
+}
+renderRoutine();
+renderTrades();
+function updateClock() {
+const now = new Date();
+const timeStr = now.toLocaleTimeString("en-GB", { timeZone: "Africa/Nairobi", hour: "2-digit", minute: "2-digit" });
+document.getElementById('headerClock').textContent = `${timeStr} EAT`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</body>
+</html>
